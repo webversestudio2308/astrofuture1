@@ -1,0 +1,6 @@
+{
+  "name": "Astrofuture",
+  "description": "Vedic Astrology & Vedic Kundali insights. Discover your destiny with personalized horoscopes, birth charts, and planetary guidance.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
