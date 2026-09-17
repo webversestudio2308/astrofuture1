@@ -115,9 +115,23 @@ export const AstrologerChat: React.FC<AstrologerChatProps> = ({
   const [is20PageModalOpen, setIs20PageModalOpen] = useState<boolean>(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
 
+  // Ensure window stays at top on initial mount
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+  }, []);
+
+  // Only scroll inside the chat container when user has interacted or AI is generating
+  useEffect(() => {
+    if (messages.length > 1 || loading) {
+      if (chatContainerRef.current) {
+        chatContainerRef.current.scrollTo({
+          top: chatContainerRef.current.scrollHeight,
+          behavior: "smooth",
+        });
+      }
+    }
   }, [messages, loading]);
 
   // Sync initial welcome message when language toggles if no other chat has occurred
@@ -148,8 +162,13 @@ export const AstrologerChat: React.FC<AstrologerChatProps> = ({
     const handleSelectPrompt = (e: any) => {
       const prompt = e.detail?.prompt;
       if (prompt) {
-        // Scroll to chat smoothly
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        // Scroll inner chat smoothly
+        if (chatContainerRef.current) {
+          chatContainerRef.current.scrollTo({
+            top: chatContainerRef.current.scrollHeight,
+            behavior: "smooth",
+          });
+        }
         handleSend(prompt);
       }
     };
@@ -559,7 +578,7 @@ export const AstrologerChat: React.FC<AstrologerChatProps> = ({
         </div>
 
         {/* Message Stream */}
-        <div className="relative z-10 flex-1 overflow-y-auto p-4 sm:p-6 pb-24 sm:pb-6 space-y-5 bg-gradient-to-b from-[#090812]/50 via-transparent to-[#090812]/80">
+        <div ref={chatContainerRef} className="relative z-10 flex-1 overflow-y-auto p-4 sm:p-6 pb-24 sm:pb-6 space-y-5 bg-gradient-to-b from-[#090812]/50 via-transparent to-[#090812]/80">
           {/* Missing Name Notification Card: Explaining to user why birth details are needed */}
           {!birthData.name && (
             <div className="p-4 rounded-2xl bg-amber-950/30 border border-amber-500/30 text-amber-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-[0_4px_20px_rgba(245,158,11,0.1)] animate-fade-in">

@@ -35,6 +35,36 @@ export default function App() {
     checkApiStatus();
   }, [customKey]);
 
+  // Ensure page always opens cleanly at the top on initial load and tab changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+  }, [activeTab]);
+
+  // Handle direct links for Razorpay compliance reviews (e.g. /terms, /privacy, /refund, /contact, or ?page=terms, #terms)
+  useEffect(() => {
+    const handleUrlRouting = () => {
+      const path = window.location.pathname.toLowerCase().replace(/^\//, "");
+      const hash = window.location.hash.toLowerCase().replace(/^#/, "");
+      const params = new URLSearchParams(window.location.search);
+      const page = params.get("page")?.toLowerCase() || "";
+
+      const target = path || hash || page;
+      if (target === "terms" || target === "terms-and-conditions") {
+        setLegalModalType("terms");
+      } else if (target === "privacy" || target === "privacy-policy") {
+        setLegalModalType("privacy");
+      } else if (target === "refund" || target === "cancellation" || target === "refund-policy") {
+        setLegalModalType("refund");
+      } else if (target === "contact" || target === "contact-us") {
+        setLegalModalType("contact");
+      }
+    };
+
+    handleUrlRouting();
+    window.addEventListener("hashchange", handleUrlRouting);
+    return () => window.removeEventListener("hashchange", handleUrlRouting);
+  }, []);
+
   const checkApiStatus = async () => {
     try {
       const headers: Record<string, string> = {};

@@ -511,10 +511,14 @@ app.post("/api/create-razorpay-order", async (req, res) => {
     };
 
     const order = await razorpay.orders.create(options);
-    res.json({ ...order, key_id });
-  } catch (error) {
+    res.json({ ...order, key_id, isTest: key_id.startsWith("rzp_test_") });
+  } catch (error: any) {
     console.error("Error creating Razorpay order:", error);
-    res.status(500).json({ error: "Failed to create order" });
+    res.status(500).json({
+      error: error?.message || "Failed to create order",
+      details: error?.description || error?.error?.description || "Order creation error on Razorpay",
+      isMockFallbackAllowed: true,
+    });
   }
 });
 

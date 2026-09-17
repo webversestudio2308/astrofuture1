@@ -18,6 +18,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     // Load Razorpay script dynamically
@@ -33,8 +34,23 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
   if (!isOpen) return null;
 
+  const handleDirectSimulate = () => {
+    setIsProcessing(true);
+    setTimeout(() => {
+      setHasPaidKundali(true);
+      setIsProcessing(false);
+      setIsSuccess(true);
+      setTimeout(() => {
+        setIsSuccess(false);
+        onPaymentSuccess();
+        onClose();
+      }, 1200);
+    }, 800);
+  };
+
   const handlePayment = async () => {
     setIsProcessing(true);
+    setErrorMessage(null);
 
     try {
       const orderResponse = await fetch("/api/create-razorpay-order", {
@@ -44,18 +60,16 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       });
       const orderData = await orderResponse.json();
 
+      if (orderData.error) {
+        setIsProcessing(false);
+        const errDetail = orderData.details || orderData.error;
+        setErrorMessage(errDetail);
+        return;
+      }
+
       if (orderData.isMock || !window.Razorpay) {
         // Fallback simulated payment when keys are not configured in dev sandbox
-        setTimeout(() => {
-          setHasPaidKundali(true);
-          setIsProcessing(false);
-          setIsSuccess(true);
-          setTimeout(() => {
-            setIsSuccess(false);
-            onPaymentSuccess();
-            onClose();
-          }, 1500);
-        }, 1200);
+        handleDirectSimulate();
         return;
       }
 
@@ -91,7 +105,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               }, 1500);
             } else {
               setIsProcessing(false);
-              alert(lang === "hi" ? "भुगतान सत्यापन विफल रहा।" : "Payment signature verification failed.");
+              setErrorMessage(lang === "hi" ? "भुगतान सत्यापन विफल रहा।" : "Payment signature verification failed.");
             }
           } catch (e) {
             console.error("Verification call error:", e);
@@ -125,14 +139,19 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       
       rzp1.on('payment.failed', function (response: any) {
         setIsProcessing(false);
-        alert(lang === "hi" ? "भुगतान विफल रहा। कृपया पुनः प्रयास करें।" : "Payment Failed. Please try again.");
+        const reason = response?.error?.description || response?.error?.reason || (lang === "hi" ? "भुगतान विफल रहा।" : "Payment Failed.");
+        setErrorMessage(
+          lang === "hi"
+            ? `${reason} (नोट: यदि आप Test Key rzp_test_... इस्तेमाल कर रहे हैं, तो वास्तविक बैंक UPI काम नहीं करेगा। UPI में 'success@razorpay' डालें या नीचे 'टेस्ट अनलॉक' बटन दबाएं।)`
+            : `${reason} (Note: If using Test Keys rzp_test_..., real bank UPI apps won't work. Use 'success@razorpay' or click 'Test Unlock' below.)`
+        );
       });
       
       rzp1.open();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       setIsProcessing(false);
-      alert(lang === "hi" ? "कुछ गलत हो गया। कृपया बाद में प्रयास करें।" : "Something went wrong. Please try again later.");
+      setErrorMessage(err?.message || (lang === "hi" ? "कुछ गलत हो गया। कृपया बाद में प्रयास करें।" : "Something went wrong. Please try again later."));
     }
   };
 
@@ -208,11 +227,26 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               </div>
             </div>
 
+            {/* Error / Test Mode Notification Banner */}
+            {errorMessage && (
+              <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-amber-200 text-xs leading-relaxed space-y-2">
+                <p>{errorMessage}</p>
+                <button
+                  type="button"
+                  onClick={handleDirectSimulate}
+                  className="px-3 py-1.5 rounded-lg bg-amber-500 text-stone-950 font-bold text-xs hover:bg-amber-400 transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>{lang === "hi" ? "टेस्टिंग हेतु अभी तुरंत अनलॉक करें" : "Simulate / Unlock for Testing Now"}</span>
+                </button>
+              </div>
+            )}
+
             {/* Submit Action */}
             <button
               onClick={handlePayment}
               disabled={isProcessing}
-              className="w-full py-3 mt-4 rounded-2xl gold-button text-stone-950 font-serif font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 active:scale-95"
+              className="w-full py-3 mt-2 rounded-2xl gold-button text-stone-950 font-serif font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 active:scale-95"
             >
               <Lock className="w-4 h-4 text-stone-950" />
               <span>
@@ -226,6 +260,18 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               </span>
               {!isProcessing && <ArrowRight className="w-4 h-4 text-stone-950" />}
             </button>
+
+            {/* Quick Test Mode Bypass for Admin/Testing */}
+            <div className="text-center pt-1">
+              <button
+                type="button"
+                onClick={handleDirectSimulate}
+                disabled={isProcessing}
+                className="text-[11px] text-amber-400/70 hover:text-amber-300 underline font-mono cursor-pointer transition-colors"
+              >
+                {lang === "hi" ? "⚡ [डेवलपर/एडमिन] बिना UPI के तुरंत टेस्ट अनलॉक करें" : "⚡ [Dev/Admin] Instant Test Unlock without UPI"}
+              </button>
+            </div>
 
             {/* Trust Footer */}
             <div className="flex items-center justify-center gap-4 text-[11px] text-stone-500 pt-1 font-mono">
