@@ -1,5 +1,5 @@
 import React from "react";
-import { Sparkles, ShieldCheck, Moon, Compass, HeartHandshake, Gem, MessageSquareQuote, Star, UserPlus } from "lucide-react";
+import { Sparkles, ShieldCheck, Moon, Compass, HeartHandshake, Gem, MessageSquareQuote, Star, UserPlus, Cloud } from "lucide-react";
 import { Language } from "../types";
 import { AstroLogo } from "./AstroLogo";
 
@@ -10,6 +10,7 @@ interface HeaderProps {
   onLanguageChange: (lang: Language) => void;
   isApiHealthy: boolean;
   onOpenBirthDetails?: () => void;
+  onOpenSync?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -19,6 +20,7 @@ export const Header: React.FC<HeaderProps> = ({
   onLanguageChange,
   isApiHealthy,
   onOpenBirthDetails,
+  onOpenSync,
 }) => {
   const tabs = [
     {
@@ -80,6 +82,18 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Right actions */}
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Sync / Save Data Trigger */}
+            {onOpenSync && (
+              <button
+                onClick={onOpenSync}
+                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-semibold bg-purple-950/40 border border-purple-500/30 text-purple-200 hover:bg-purple-900/50 hover:border-amber-400/40 hover:scale-[1.02] active:scale-95 transition-all shadow-inner cursor-pointer"
+                title={lang === "hi" ? "डेटा सुरक्षित करें या दूसरे फोन में लोड करें" : "Save or restore data on another device"}
+              >
+                <Cloud className="w-3.5 h-3.5 text-amber-400" />
+                <span className="hidden sm:inline">{lang === "hi" ? "सेव / सिंक" : "Save & Sync"}</span>
+              </button>
+            )}
+
             {/* Enter / Edit Birth Details Fast Trigger */}
             {onOpenBirthDetails && (
               <button

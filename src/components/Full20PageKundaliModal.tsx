@@ -307,6 +307,29 @@ export const Full20PageKundaliModal: React.FC<Full20PageKundaliModalProps> = ({
           </div>
         </div>
 
+        {/* Warning if Name is Missing */}
+        {(!birthData.name || !birthData.name.trim()) && (
+          <div className="py-2.5 px-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between gap-3 text-xs text-amber-200 shrink-0 mb-2">
+            <div className="flex items-center gap-2">
+              <span className="text-amber-400 font-bold">⚠️</span>
+              <span>
+                {isHi
+                  ? "आपने अभी तक अपना वास्तविक नाम दर्ज नहीं किया है। कुंडली में 'Seeker' के स्थान पर अपना नाम दिखाने हेतु विवरण भरें।"
+                  : "Real name not entered yet. Fill details so the Kundali displays your authentic name instead of 'Seeker'."}
+              </span>
+            </div>
+            <button
+              onClick={() => {
+                onClose();
+                window.dispatchEvent(new CustomEvent("astro_open_birth_modal"));
+              }}
+              className="px-3 py-1 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-100 hover:bg-amber-500/30 font-semibold text-xs whitespace-nowrap cursor-pointer active:scale-95"
+            >
+              {isHi ? "नाम दर्ज करें" : "Enter Name"}
+            </button>
+          </div>
+        )}
+
         {/* Scrollable Document Container */}
         <div className="flex-1 overflow-y-auto py-4 space-y-6">
           {/* ALL 20 PAGES WRAPPER (Styled for A4 Print & Canvas Rendering) */}
@@ -542,7 +565,7 @@ function renderPageContent(pageNum: number, data: any, isHi: boolean) {
                 {isHi ? "जातक विवरण (Native Dossier)" : "Native Dossier"}
               </span>
               <div className="space-y-1 font-medium">
-                <div>{isHi ? "नाम:" : "Name:"} <span className="font-bold text-stone-900">{birthData.name || "Seeker"}</span></div>
+                <div>{isHi ? "नाम:" : "Name:"} <span className="font-bold text-stone-900">{birthData.name && birthData.name.trim() ? birthData.name.trim() : (isHi ? "जातक / साधक" : "Seeker")}</span></div>
                 <div>{isHi ? "जन्म तिथि:" : "Birth Date:"} <span className="text-stone-800">{birthData.date}</span></div>
                 <div>{isHi ? "जन्म समय:" : "Birth Time:"} <span className="text-stone-800">{birthData.time}</span></div>
                 <div>{isHi ? "जन्म स्थान:" : "Birth Place:"} <span className="text-stone-800">{birthData.place}</span></div>

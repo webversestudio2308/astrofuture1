@@ -18,6 +18,7 @@ import {
   FileText,
   Radio,
   Zap,
+  Cloud,
 } from "lucide-react";
 import { calculateVedicKundali } from "../utils/vedicCalculations";
 import { ChatKundaliWidget } from "./ChatKundaliWidget";
@@ -27,6 +28,12 @@ import { getStoredBirthData, saveStoredBirthData } from "../utils/birthStore";
 import { useKundaliPayment } from "../utils/paymentStore";
 import { BirthDetailsModal } from "./BirthDetailsModal";
 import { AIPanditAvatar, AIPanditState, AI_PANDIT_AVATAR } from "./AIPanditAvatar";
+import { SyncModal } from "./SyncModal";
+import {
+  getStoredChatMessages,
+  saveStoredChatMessages,
+  SESSION_RESTORED_EVENT,
+} from "../utils/syncStore";
 
 interface AstrologerChatProps {
   lang: Language;
@@ -82,8 +89,12 @@ export const AstrologerChat: React.FC<AstrologerChatProps> = ({
     calculateVedicKundali(getStoredBirthData())
   );
 
-  // Dynamic welcome message with compelling curiosity hooks ("प्रलोभन")
+  // Dynamic welcome message or restored chat history
   const [messages, setMessages] = useState<ChatMessage[]>(() => {
+    const savedMessages = getStoredChatMessages();
+    if (savedMessages && savedMessages.length > 0) {
+      return savedMessages;
+    }
     const stored = getStoredBirthData();
     const hasName = Boolean(stored.name && stored.name.trim());
     return [
@@ -113,13 +124,51 @@ export const AstrologerChat: React.FC<AstrologerChatProps> = ({
   const { hasPaid, markAsPaid } = useKundaliPayment();
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState<boolean>(false);
   const [is20PageModalOpen, setIs20PageModalOpen] = useState<boolean>(false);
+  const [isSyncModalOpen, setIsSyncModalOpen] = useState<boolean>(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
 
+  // Save chat messages to local storage whenever updated
+  useEffect(() => {
+    if (messages.length > 0) {
+      saveStoredChatMessages(messages);
+    }
+  }, [messages]);
+
   // Ensure window stays at top on initial mount
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
+  }, []);
+
+  // Listen for session restore and header sync triggers
+  useEffect(() => {
+    const handleSessionRestored = (e: any) => {
+      const session = e?.detail?.session;
+      if (session) {
+        if (session.birthData) {
+          setBirthData(session.birthData);
+          setKundali(calculateVedicKundali(session.birthData));
+        }
+        if (session.messages && Array.isArray(session.messages)) {
+          setMessages(session.messages);
+        }
+      }
+    };
+    const handleOpenSync = () => {
+      setIsSyncModalOpen(true);
+    };
+    const handleOpenBirth = () => {
+      setIsBirthModalOpen(true);
+    };
+    window.addEventListener(SESSION_RESTORED_EVENT, handleSessionRestored);
+    window.addEventListener("astro_open_sync_modal", handleOpenSync);
+    window.addEventListener("astro_open_birth_modal", handleOpenBirth);
+    return () => {
+      window.removeEventListener(SESSION_RESTORED_EVENT, handleSessionRestored);
+      window.removeEventListener("astro_open_sync_modal", handleOpenSync);
+      window.removeEventListener("astro_open_birth_modal", handleOpenBirth);
+    };
   }, []);
 
   // Only scroll inside the chat container when user has interacted or AI is generating
@@ -188,11 +237,18 @@ export const AstrologerChat: React.FC<AstrologerChatProps> = ({
       role: "assistant",
       content:
         lang === "hi"
-          ? `🙏 धन्यवाद ${updated.name || "साधक"} जी! आपका जन्म विवरण सहेज लिया गया है।\n\n✨ **लग्न**: ${newKundali.ascendant.sign} (${newKundali.ascendant.degree}°)\n🌙 **चंद्र राशि**: ${newKundali.moon.sign}\n⭐ **नक्षत्र**: ${newKundali.nakshatra.name} (चरण ${newKundali.nakshatra.pada})\n🪐 **वर्तमान महादशा**: ${newKundali.dasha.currentMahadasha}\n\nअब आप अपनी कुंडली अथवा जीवन के किसी भी क्षेत्र के संबंध में प्रश्न पूछ सकते हैं।`
-          : `🙏 Thank you ${updated.name || "Seeker"}! Your birth dossier has been updated.\n\n✨ **Ascendant (Lagna)**: ${newKundali.ascendant.sign} (${newKundali.ascendant.degree}°)\n🌙 **Moon Sign**: ${newKundali.moon.sign}\n⭐ **Nakshatra**: ${newKundali.nakshatra.name} (Pada ${newKundali.nakshatra.pada})\n🪐 **Current Dasha**: ${newKundali.dasha.currentMahadasha}\n\nYou may now ask any astrological question based on your verified chart.`,
+          ? `🙏 धन्यवाद **${updated.name || "साधक"}** जी! आपका प्रामाणिक जन्म विवरण सहेज लिया गया है।\n\n✨ **लग्न**: ${newKundali.ascendant.sign} (${newKundali.ascendant.degree}°)\n🌙 **चंद्र राशि**: ${newKundali.moon.sign}\n⭐ **नक्षत्र**: ${newKundali.nakshatra.name} (चरण ${newKundali.nakshatra.pada})\n🪐 **वर्तमान महादशा**: ${newKundali.dasha.currentMahadasha}\n\n${hasPaid ? "✅ आपकी 20-पृष्ठीय महाकुंडली अब आपके नाम से पूर्णतः तैयार है! आप ऊपर '20 पृष्ठीय महाकुंडली' बटन से इसे देख व डाउनलोड कर सकते हैं।" : "अब आप अपनी कुंडली अथवा जीवन के किसी भी क्षेत्र के संबंध में प्रश्न पूछ सकते हैं।"}`
+          : `🙏 Thank you **${updated.name || "Seeker"}**! Your birth dossier has been updated.\n\n✨ **Ascendant (Lagna)**: ${newKundali.ascendant.sign} (${newKundali.ascendant.degree}°)\n🌙 **Moon Sign**: ${newKundali.moon.sign}\n⭐ **Nakshatra**: ${newKundali.nakshatra.name} (Pada ${newKundali.nakshatra.pada})\n🪐 **Current Dasha**: ${newKundali.dasha.currentMahadasha}\n\n${hasPaid ? "✅ Your 20-Page MahaKundali is now ready under your authentic name! Click '20-Page Kundali' above to view & download." : "You may now ask any astrological question based on your verified chart."}`,
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     };
     setMessages((prev) => [...prev, updateMsg]);
+
+    // If paid and name is filled, open 20-page modal
+    if (hasPaid && updated.name && updated.name.trim()) {
+      setTimeout(() => {
+        setIs20PageModalOpen(true);
+      }, 700);
+    }
   };
 
   // Trigger ₹51 Upsell proposal if 4 or 5 turns reached
@@ -322,21 +378,31 @@ export const AstrologerChat: React.FC<AstrologerChatProps> = ({
   const handlePaymentSuccess = () => {
     markAsPaid();
 
+    const hasRealName = Boolean(birthData.name && birthData.name.trim());
+    if (!hasRealName) {
+      // If user paid ₹51 without entering their name/birth details, open birth modal immediately
+      setIsBirthModalOpen(true);
+    }
+
     const paidSuccessMsg: ChatMessage = {
       id: `paid-${Date.now()}`,
       role: "assistant",
       content:
         lang === "hi"
-          ? "🙏 **सद्बुद्धि एवं कल्याण हो!**\n\nआपकी **₹51** की सांकेतिक दक्षिणा स्वीकार हुई। नवग्रहों की कृपा से मैं अब आपके पहले प्रश्न का संपूर्ण विश्लेषण प्रस्तुत कर रहा हूँ..."
-          : "🙏 **Divine Blessings & Prosperity!**\n\nYour sacred Dakshina of **₹51** has been confirmed. Powered by the cosmic Navagrahas, I am now retrieving the complete solution for your first question...",
+          ? hasRealName
+            ? `🙏 **सद्बुद्धि एवं कल्याण हो ${birthData.name} जी!**\n\nआपकी **₹51** की सांकेतिक दक्षिणा स्वीकार हुई। नवग्रहों की कृपा से मैं अब आपके पहले प्रश्न का संपूर्ण विश्लेषण व 20-पृष्ठीय महाकुंडली प्रस्तुत कर रहा हूँ...`
+            : "🙏 **सद्बुद्धि एवं कल्याण हो!**\n\nआपकी **₹51** की सांकेतिक दक्षिणा सफलतापूर्वक स्वीकार हो गई है!\n\n⚠️ **आवश्यक कदम**: आपकी प्रामाणिक 20-पृष्ठीय रंगीन महाकुंडली आपके नाम से तैयार करने के लिए कृपया सामने खुले फॉर्म में अपना **सही नाम, जन्म तिथि, समय व जन्म स्थान** दर्ज करें ताकि कुंडली में 'Seeker' या अमान्य नाम न आए।"
+          : hasRealName
+          ? `🙏 **Divine Blessings & Prosperity, ${birthData.name}!**\n\nYour sacred Dakshina of **₹51** has been confirmed. Powered by the cosmic Navagrahas, I am now retrieving your complete solution...`
+          : "🙏 **Divine Blessings & Prosperity!**\n\nYour sacred Dakshina of **₹51** has been confirmed successfully!\n\n⚠️ **Important Step**: To generate your certified 20-page color MahaKundali under your real name, please fill your authentic Name and birth details in the form on screen.",
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     };
     setMessages((prev) => {
       // Find the last user question to re-trigger it
       const lastUserQuestion = [...prev].reverse().find(m => m.role === "user")?.content;
       
-      // Auto-trigger the API in the background after setting state
-      if (lastUserQuestion) {
+      // Auto-trigger the API in the background after setting state only if name is known
+      if (lastUserQuestion && hasRealName) {
         setTimeout(() => {
           handleSend(lastUserQuestion + " (Payment confirmed! Please give the full detailed solution, remedies, and astrological reasons now.)", true);
         }, 500);
@@ -544,12 +610,14 @@ export const AstrologerChat: React.FC<AstrologerChatProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {/* Direct button to open 20-page Kundali */}
             <button
               onClick={() => {
                 if (!hasPaid) {
                   setIsPaymentModalOpen(true);
+                } else if (!birthData.name || !birthData.name.trim()) {
+                  setIsBirthModalOpen(true);
                 } else {
                   setIs20PageModalOpen(true);
                 }
@@ -566,6 +634,16 @@ export const AstrologerChat: React.FC<AstrologerChatProps> = ({
                   ? "20 पृष्ठीय कुंडली (₹51)"
                   : "Unlock 20-Pg (₹51)"}
               </span>
+            </button>
+
+            {/* Cross-device Save & Sync Trigger */}
+            <button
+              onClick={() => setIsSyncModalOpen(true)}
+              className="text-xs font-serif font-semibold text-purple-200 hover:text-amber-200 flex items-center gap-1.5 cursor-pointer px-2.5 py-1 rounded-lg bg-purple-950/50 border border-purple-500/30 hover:border-amber-400/40 transition-all active:scale-95"
+              title={lang === "hi" ? "बिना लॉगिन डेटा सुरक्षित करें या दूसरे फोन में लोड करें" : "Save data or sync to other phone without login"}
+            >
+              <Cloud className="w-3.5 h-3.5 text-amber-400" />
+              <span className="hidden sm:inline">{lang === "hi" ? "डेटा सिंक" : "Save & Sync"}</span>
             </button>
 
             {hasPaid && (
@@ -853,6 +931,16 @@ export const AstrologerChat: React.FC<AstrologerChatProps> = ({
         birthData={birthData}
         onSave={handleUpdateBirthData}
         lang={lang}
+      />
+
+      {/* Cross-Device Save & Restore Sync Modal */}
+      <SyncModal
+        isOpen={isSyncModalOpen}
+        onClose={() => setIsSyncModalOpen(false)}
+        lang={lang}
+        birthData={birthData}
+        messages={messages}
+        hasPaid={hasPaid}
       />
     </div>
   );

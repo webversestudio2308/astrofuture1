@@ -12,6 +12,7 @@ import { JyotishiSlogans } from "./components/JyotishiSlogans";
 import { LegalModal, LegalPageType } from "./components/LegalModals";
 import { Language } from "./types";
 import { Sparkles, Shield, Compass, Heart, Star, Users, CheckCircle2, Lock, ArrowUpRight } from "lucide-react";
+import { loadSessionFromServer } from "./utils/syncStore";
 
 export default function App() {
   // Application starts directly with Acharya AI Chat!
@@ -40,13 +41,25 @@ export default function App() {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" as ScrollBehavior });
   }, [activeTab]);
 
-  // Handle direct links for Razorpay compliance reviews (e.g. /terms, /privacy, /refund, /contact, or ?page=terms, #terms)
+  // Handle direct links for Razorpay compliance reviews and ?sync=... auto-restoration
   useEffect(() => {
     const handleUrlRouting = () => {
       const path = window.location.pathname.toLowerCase().replace(/^\//, "");
       const hash = window.location.hash.toLowerCase().replace(/^#/, "");
       const params = new URLSearchParams(window.location.search);
       const page = params.get("page")?.toLowerCase() || "";
+
+      // Auto-restore session if ?sync=CODE is in URL (e.g. shared from another device)
+      const syncCode = params.get("sync");
+      if (syncCode) {
+        loadSessionFromServer(syncCode).then((res) => {
+          if (res.success) {
+            // Clean URL query param without full page reload
+            const cleanUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, cleanUrl);
+          }
+        });
+      }
 
       const target = path || hash || page;
       if (target === "terms" || target === "terms-and-conditions") {
@@ -101,6 +114,7 @@ export default function App() {
         lang={lang}
         onLanguageChange={handleLanguageChange}
         isApiHealthy={isApiHealthy}
+        onOpenSync={() => window.dispatchEvent(new CustomEvent("astro_open_sync_modal"))}
       />
 
       {/* Main View Container */}

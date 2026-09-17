@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import crypto from "crypto";
 import dotenv from "dotenv";
 import Razorpay from "razorpay";
@@ -551,6 +552,92 @@ app.post("/api/verify-razorpay-payment", (req, res) => {
   } catch (error) {
     console.error("Error verifying payment signature:", error);
     res.status(500).json({ verified: false, error: "Internal verification failure" });
+  }
+});
+
+// In-memory + persistent file storage for secret Kundali sync sessions (Cross-device restore without login)
+const SESSIONS_FILE = path.join(process.cwd(), "astro_sessions.json");
+let sessionsStore: Record<string, any> = {};
+
+try {
+  if (fs.existsSync(SESSIONS_FILE)) {
+    const raw = fs.readFileSync(SESSIONS_FILE, "utf-8");
+    sessionsStore = JSON.parse(raw);
+  }
+} catch (e) {
+  console.warn("Could not read astro_sessions.json, starting fresh", e);
+  sessionsStore = {};
+}
+
+function persistSessions() {
+  try {
+    fs.writeFileSync(SESSIONS_FILE, JSON.stringify(sessionsStore, null, 2), "utf-8");
+  } catch (e) {
+    console.error("Failed to write astro_sessions.json", e);
+  }
+}
+
+function generateAccessCode(): string {
+  const digits = Math.floor(1000 + Math.random() * 9000);
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const char1 = chars[Math.floor(Math.random() * chars.length)];
+  const char2 = chars[Math.floor(Math.random() * chars.length)];
+  return `ASTRO-${char1}${char2}${digits}`;
+}
+
+app.post("/api/sync/save", (req, res) => {
+  try {
+    let { accessCode, birthData, messages, hasPaidKundali } = req.body;
+    if (!accessCode || typeof accessCode !== "string" || !accessCode.trim()) {
+      accessCode = generateAccessCode();
+    } else {
+      accessCode = accessCode.trim().toUpperCase();
+    }
+
+    const normalizedCode = accessCode.replace(/[^A-Z0-9]/g, "");
+
+    sessionsStore[normalizedCode] = {
+      code: accessCode,
+      normalizedCode,
+      birthData: birthData || null,
+      messages: Array.isArray(messages) ? messages : [],
+      hasPaidKundali: Boolean(hasPaidKundali),
+      updatedAt: Date.now(),
+    };
+
+    persistSessions();
+
+    res.json({
+      success: true,
+      accessCode,
+      message: "Session saved successfully",
+    });
+  } catch (err: any) {
+    console.error("Error saving sync session:", err);
+    res.status(500).json({ success: false, error: "Failed to save session" });
+  }
+});
+
+app.get("/api/sync/get/:code", (req, res) => {
+  try {
+    const rawCode = req.params.code || "";
+    const normalizedCode = rawCode.trim().toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+    const found = sessionsStore[normalizedCode];
+    if (!found) {
+      return res.status(404).json({
+        success: false,
+        error: "कोड नहीं मिला। कृपया कोड दोबारा जांचें। (Code not found)",
+      });
+    }
+
+    res.json({
+      success: true,
+      session: found,
+    });
+  } catch (err: any) {
+    console.error("Error retrieving sync session:", err);
+    res.status(500).json({ success: false, error: "Failed to retrieve session" });
   }
 });
 
