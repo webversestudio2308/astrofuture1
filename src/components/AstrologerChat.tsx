@@ -684,99 +684,123 @@ export const AstrologerChat: React.FC<AstrologerChatProps> = ({
             </div>
           )}
 
-          {/* Messages Render */}
-          {messages.map((msg) => {
-            const isUser = msg.role === "user";
+          {/* Messages Render with Inlined Kundali Widget positioned right before Acharya's detailed solutions */}
+          {(() => {
+            const paidIndex = messages.findIndex((m) => m.id.startsWith("paid-"));
+            const insertAfterIndex = paidIndex !== -1 ? paidIndex : (messages.length > 0 ? 0 : -1);
+
             return (
-              <div
-                key={msg.id}
-                className={`flex gap-3 ${isUser ? "justify-end" : "justify-start"} animate-fade-in`}
-              >
-                {/* Acharya Avatar on EVERY Assistant Message */}
-                {!isUser && (
-                  <div className="shrink-0 mt-1">
-                    <AIPanditAvatar
-                      size="sm"
-                      state="idle"
-                      showRing={true}
-                    />
-                  </div>
-                )}
-
-                <div
-                  className={`max-w-[88%] sm:max-w-[78%] rounded-2xl p-4 text-xs sm:text-sm leading-relaxed transition-all shadow-md ${
-                    isUser
-                      ? "bg-gradient-to-br from-[#1d1b33] to-[#252242] border border-amber-400/25 text-white rounded-tr-none shadow-[0_4px_16px_rgba(0,0,0,0.4)]"
-                      : "bg-[#131124]/90 border border-white/10 text-[#eae7f5] rounded-tl-none shadow-[0_6px_24px_rgba(0,0,0,0.5)] backdrop-blur-md"
-                  }`}
-                >
-                  {/* Assistant name header on AI messages */}
-                  {!isUser && (
-                    <div className="flex items-center justify-between pb-1.5 mb-2 border-b border-white/[0.08]">
-                      <span className="text-[11px] font-serif font-bold text-amber-300 flex items-center gap-1">
-                        <Sparkles className="w-3 h-3 text-amber-400" />
-                        {lang === "hi" ? "आचार्य" : "Acharya"}
-                      </span>
-                      <span className="text-[10px] text-stone-500 font-mono">
-                        {msg.timestamp}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Message body */}
-                  <div className="whitespace-pre-wrap space-y-2">
-                    {msg.content}
-                    {msg.requiresPayment && !hasPaid && (
-                      <div className="mt-2 text-white/10 blur-[4px] select-none pointer-events-none">
-                        लंबे समय से आपके जीवन में जो बाधाएं आ रही हैं, उनका मुख्य कारण दशम भाव और सप्तम भाव में राहु और शनि का एक विशेष युति संबंध है। इस रहस्यमयी गोचर के प्रभाव से आपके कार्यों में अंतिम समय पर रुकावट आती है और...
-                      </div>
-                    )}
-                  </div>
-
-                  {isUser && (
-                    <div className="text-[10px] mt-2 font-mono flex items-center gap-1 justify-end text-amber-300/60">
-                      <span>{msg.timestamp}</span>
-                    </div>
-                  )}
-
-                  {/* Prominent ₹51 Upsell Action Card inside chat */}
-                  {(msg.requiresPayment || msg.id.startsWith("upsell-")) && !hasPaid && (
-                    <div className="mt-4 pt-4 border-t border-amber-500/30 flex flex-col items-center gap-3 relative">
-                      <div className="absolute inset-0 bg-gradient-to-t from-[#131124] to-transparent pointer-events-none -mt-16 h-16" />
-                      <p className="text-amber-300/90 font-serif text-sm font-medium text-center z-10">
-                        {lang === "hi" ? "🔒 आगे का विस्तृत समाधान एवं अचूक उपाय पढ़ने के लिए अनलॉक करें:" : "🔒 Unlock to read the complete detailed solution and precise remedies:"}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => setIsPaymentModalOpen(true)}
-                        className="w-full px-5 py-3 rounded-xl gold-button text-stone-950 font-serif font-bold text-sm shadow-[0_0_24px_rgba(245,158,11,0.5)] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 z-10"
+              <>
+                {messages.map((msg, idx) => {
+                  const isUser = msg.role === "user";
+                  return (
+                    <React.Fragment key={msg.id}>
+                      <div
+                        className={`flex gap-3 ${isUser ? "justify-end" : "justify-start"} animate-fade-in`}
                       >
-                        <CreditCard className="w-5 h-5 text-stone-950" />
-                        <span>{lang === "hi" ? "केवल ₹51 में संपूर्ण समाधान अनलॉक करें" : "Unlock Full Solution for just ₹51"}</span>
-                      </button>
-                    </div>
-                  )}
-                </div>
+                        {/* Acharya Avatar on EVERY Assistant Message */}
+                        {!isUser && (
+                          <div className="shrink-0 mt-1">
+                            <AIPanditAvatar
+                              size="sm"
+                              state="idle"
+                              showRing={true}
+                            />
+                          </div>
+                        )}
 
-                {/* User Avatar */}
-                {isUser && (
-                  <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-stone-800 to-stone-700 border border-amber-400/30 text-amber-200 flex items-center justify-center shrink-0 shadow-md mt-1">
-                    <User className="w-4 h-4" />
-                  </div>
+                        <div
+                          className={`max-w-[88%] sm:max-w-[78%] rounded-2xl p-4 text-xs sm:text-sm leading-relaxed transition-all shadow-md ${
+                            isUser
+                              ? "bg-gradient-to-br from-[#1d1b33] to-[#252242] border border-amber-400/25 text-white rounded-tr-none shadow-[0_4px_16px_rgba(0,0,0,0.4)]"
+                              : "bg-[#131124]/90 border border-white/10 text-[#eae7f5] rounded-tl-none shadow-[0_6px_24px_rgba(0,0,0,0.5)] backdrop-blur-md"
+                          }`}
+                        >
+                          {/* Assistant name header on AI messages */}
+                          {!isUser && (
+                            <div className="flex items-center justify-between pb-1.5 mb-2 border-b border-white/[0.08]">
+                              <span className="text-[11px] font-serif font-bold text-amber-300 flex items-center gap-1">
+                                <Sparkles className="w-3 h-3 text-amber-400" />
+                                {lang === "hi" ? "आचार्य" : "Acharya"}
+                              </span>
+                              <span className="text-[10px] text-stone-500 font-mono">
+                                {msg.timestamp}
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Message body */}
+                          <div className="whitespace-pre-wrap space-y-2">
+                            {msg.content}
+                            {msg.requiresPayment && !hasPaid && (
+                              <div className="mt-2 text-white/10 blur-[4px] select-none pointer-events-none">
+                                लंबे समय से आपके जीवन में जो बाधाएं आ रही हैं, उनका मुख्य कारण दशम भाव और सप्तम भाव में राहु और शनि का एक विशेष युति संबंध है। इस रहस्यमयी गोचर के प्रभाव से आपके कार्यों में अंतिम समय पर रुकावट आती है और...
+                              </div>
+                            )}
+                          </div>
+
+                          {isUser && (
+                            <div className="text-[10px] mt-2 font-mono flex items-center gap-1 justify-end text-amber-300/60">
+                              <span>{msg.timestamp}</span>
+                            </div>
+                          )}
+
+                          {/* Prominent ₹51 Upsell Action Card inside chat */}
+                          {(msg.requiresPayment || msg.id.startsWith("upsell-")) && !hasPaid && (
+                            <div className="mt-4 pt-4 border-t border-amber-500/30 flex flex-col items-center gap-3 relative">
+                              <div className="absolute inset-0 bg-gradient-to-t from-[#131124] to-transparent pointer-events-none -mt-16 h-16" />
+                              <p className="text-amber-300/90 font-serif text-sm font-medium text-center z-10">
+                                {lang === "hi" ? "🔒 आगे का विस्तृत समाधान एवं अचूक उपाय पढ़ने के लिए अनलॉक करें:" : "🔒 Unlock to read the complete detailed solution and precise remedies:"}
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => setIsPaymentModalOpen(true)}
+                                className="w-full px-5 py-3 rounded-xl gold-button text-stone-950 font-serif font-bold text-sm shadow-[0_0_24px_rgba(245,158,11,0.5)] transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-95 z-10"
+                              >
+                                <CreditCard className="w-5 h-5 text-stone-950" />
+                                <span>{lang === "hi" ? "केवल ₹51 में संपूर्ण समाधान अनलॉक करें" : "Unlock Full Solution for just ₹51"}</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* User Avatar */}
+                        {isUser && (
+                          <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-stone-800 to-stone-700 border border-amber-400/30 text-amber-200 flex items-center justify-center shrink-0 shadow-md mt-1">
+                            <User className="w-4 h-4" />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Render Kundali Widget right here:
+                          Starts with 'संपूर्ण वैदिक जन्म कुंडली व महाज्योतिषी समाधान',
+                          followed by '3 मुख्य प्रश्नों / बाधाओं का समाधान एवं महाज्योतिषी उपाय' (with 3 core answers),
+                          and all subsequent answers/chat from Acharya appear IMMEDIATELY AFTER THIS!
+                      */}
+                      {hasPaid && idx === insertAfterIndex && (
+                        <ChatKundaliWidget
+                          kundali={kundali}
+                          birthData={birthData}
+                          lang={lang}
+                          onOpenPrintModal={() => setIs20PageModalOpen(true)}
+                        />
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+
+                {/* Fallback if messages array was empty and user has paid */}
+                {hasPaid && insertAfterIndex === -1 && (
+                  <ChatKundaliWidget
+                    kundali={kundali}
+                    birthData={birthData}
+                    lang={lang}
+                    onOpenPrintModal={() => setIs20PageModalOpen(true)}
+                  />
                 )}
-              </div>
+              </>
             );
-          })}
-
-          {/* If user has paid, render full in-chat Kundali Widget */}
-          {hasPaid && (
-            <ChatKundaliWidget
-              kundali={kundali}
-              birthData={birthData}
-              lang={lang}
-              onOpenPrintModal={() => setIs20PageModalOpen(true)}
-            />
-          )}
+          })()}
 
           {/* HIGH-CONVERTING ₹51 PAYWALL CTA BUTTON (Trigger Logic) */}
           {!hasPaid && userTurnsCount >= 3 && (

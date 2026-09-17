@@ -172,6 +172,16 @@ export const ChatKundaliWidget: React.FC<ChatKundaliWidgetProps> = ({
             </p>
           </div>
         </div>
+
+        {/* Subtle connector indicating live consultation continues right below */}
+        <div className="pt-3 flex items-center justify-center gap-2 text-xs font-serif font-medium text-amber-300/90 border-t border-white/10">
+          <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+          <span>
+            {lang === "hi"
+              ? "👇 आचार्य जी द्वारा आपके प्रश्नों का लाइव समाधान व बातचीत नीचे प्रस्तुत है:"
+              : "👇 Live consultation and detailed replies from Acharya continue below:"}
+          </span>
+        </div>
       </div>
 
       {/* Modal instance for full 20 pages */}
