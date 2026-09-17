@@ -8,6 +8,7 @@ interface PaymentModalProps {
   onClose: () => void;
   onPaymentSuccess: () => void;
   lang: Language;
+  userName?: string;
 }
 
 export const PaymentModal: React.FC<PaymentModalProps> = ({
@@ -15,6 +16,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
   onClose,
   onPaymentSuccess,
   lang,
+  userName,
 }) => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -121,9 +123,9 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
           }
         },
         prefill: {
-          name: "Seeker",
-          email: "seeker@astrofuture.com",
-          contact: "9999999999"
+          name: userName?.trim() || "",
+          email: "",
+          contact: "",
         },
         theme: {
           color: "#f59e0b"
@@ -139,12 +141,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
       
       rzp1.on('payment.failed', function (response: any) {
         setIsProcessing(false);
-        const reason = response?.error?.description || response?.error?.reason || (lang === "hi" ? "भुगतान विफल रहा।" : "Payment Failed.");
-        setErrorMessage(
-          lang === "hi"
-            ? `${reason} (नोट: यदि आप Test Key rzp_test_... इस्तेमाल कर रहे हैं, तो वास्तविक बैंक UPI काम नहीं करेगा। UPI में 'success@razorpay' डालें या नीचे 'टेस्ट अनलॉक' बटन दबाएं।)`
-            : `${reason} (Note: If using Test Keys rzp_test_..., real bank UPI apps won't work. Use 'success@razorpay' or click 'Test Unlock' below.)`
-        );
+        const reason = response?.error?.description || response?.error?.reason || (lang === "hi" ? "भुगतान विफल रहा। कृपया पुनः प्रयास करें।" : "Payment failed. Please try again.");
+        setErrorMessage(reason);
       });
       
       rzp1.open();
@@ -227,18 +225,10 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               </div>
             </div>
 
-            {/* Error / Test Mode Notification Banner */}
+            {/* Error Notification Banner */}
             {errorMessage && (
-              <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-amber-200 text-xs leading-relaxed space-y-2">
+              <div className="p-3.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-amber-200 text-xs leading-relaxed">
                 <p>{errorMessage}</p>
-                <button
-                  type="button"
-                  onClick={handleDirectSimulate}
-                  className="px-3 py-1.5 rounded-lg bg-amber-500 text-stone-950 font-bold text-xs hover:bg-amber-400 transition-colors flex items-center gap-1 cursor-pointer"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>{lang === "hi" ? "टेस्टिंग हेतु अभी तुरंत अनलॉक करें" : "Simulate / Unlock for Testing Now"}</span>
-                </button>
               </div>
             )}
 
@@ -252,26 +242,14 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               <span>
                 {isProcessing
                   ? lang === "hi"
-                    ? "दक्षिणा पुष्टि की जा रही है..."
-                    : "Processing ₹51..."
+                    ? "Razorpay सुरक्षित गेटवे लोड हो रहा है..."
+                    : "Connecting to Razorpay..."
                   : lang === "hi"
-                  ? "₹51 भुगतान करें एवं समाधान देखें"
-                  : "Pay ₹51 & Unlock Instantly"}
+                  ? "₹51 सुरक्षित भुगतान करें"
+                  : "Pay ₹51 Securely via UPI / Card"}
               </span>
               {!isProcessing && <ArrowRight className="w-4 h-4 text-stone-950" />}
             </button>
-
-            {/* Quick Test Mode Bypass for Admin/Testing */}
-            <div className="text-center pt-1">
-              <button
-                type="button"
-                onClick={handleDirectSimulate}
-                disabled={isProcessing}
-                className="text-[11px] text-amber-400/70 hover:text-amber-300 underline font-mono cursor-pointer transition-colors"
-              >
-                {lang === "hi" ? "⚡ [डेवलपर/एडमिन] बिना UPI के तुरंत टेस्ट अनलॉक करें" : "⚡ [Dev/Admin] Instant Test Unlock without UPI"}
-              </button>
-            </div>
 
             {/* Trust Footer */}
             <div className="flex items-center justify-center gap-4 text-[11px] text-stone-500 pt-1 font-mono">

@@ -628,6 +628,7 @@ export const KundaliView: React.FC<KundaliViewProps> = ({
           setIs20PageModalOpen(true);
         }}
         lang={lang}
+        userName={birthData.name}
       />
     </div>
   );

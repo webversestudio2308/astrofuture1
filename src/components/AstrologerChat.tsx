@@ -937,6 +937,7 @@ export const AstrologerChat: React.FC<AstrologerChatProps> = ({
         onClose={() => setIsPaymentModalOpen(false)}
         onPaymentSuccess={handlePaymentSuccess}
         lang={lang}
+        userName={birthData.name}
       />
 
       {/* 20-Page Full Certified Kundali Modal */}

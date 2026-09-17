@@ -427,6 +427,7 @@ export const Full20PageKundaliModal: React.FC<Full20PageKundaliModalProps> = ({
             setIsPaymentModalOpen(false);
           }}
           lang={docLang}
+          userName={birthData.name}
         />
       </div>
     </div>
