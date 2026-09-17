@@ -643,14 +643,21 @@ app.get("/api/sync/get/:code", (req, res) => {
 
 // Vite middleware or static serving
 async function startServer() {
-  if (process.env.NODE_ENV !== "production") {
+  const distPath = path.join(process.cwd(), "dist");
+  const hasDist = fs.existsSync(distPath) && fs.existsSync(path.join(distPath, "index.html"));
+  // On external hosts like Railway/Render, if dist exists or NODE_ENV=production, serve production build
+  const isProduction = process.env.NODE_ENV === "production" || (hasDist && !process.env.K_SERVICE);
+
+  if (!isProduction) {
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        allowedHosts: true,
+      },
       appType: "spa",
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
 
     // Handle unmatched API routes with clean JSON 404 rather than HTML fallback
